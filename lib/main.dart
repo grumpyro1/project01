@@ -15,6 +15,7 @@ class MyApp extends StatelessWidget {
       title: 'Be My Valentine',
       theme: ThemeData(
         primarySwatch: Colors.pink,
+        scaffoldBackgroundColor: const Color(0xFFFFE5EC),
       ),
       home: const ValentinePage(),
       debugShowCheckedModeBanner: false,
@@ -45,6 +46,7 @@ class _ValentinePageState extends State<ValentinePage>
   late AnimationController _pulseController;
   late AnimationController _floatController;
   late AnimationController _celebrateController;
+  late AnimationController _sparkleController;
 
   @override
   void initState() {
@@ -67,6 +69,12 @@ class _ValentinePageState extends State<ValentinePage>
       duration: const Duration(seconds: 1),
       vsync: this,
     )..repeat(reverse: true);
+
+    // Sparkle animation
+    _sparkleController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat();
 
     // Start falling images
     startFallingImages();
@@ -96,6 +104,7 @@ class _ValentinePageState extends State<ValentinePage>
     _pulseController.dispose();
     _floatController.dispose();
     _celebrateController.dispose();
+    _sparkleController.dispose();
     fallingTimer?.cancel();
     super.dispose();
   }
@@ -103,42 +112,32 @@ class _ValentinePageState extends State<ValentinePage>
   void handleNoClick() {
     setState(() {
       clickCount++;
-      print('DEBUG: Click count = $clickCount');
 
       // DON'T shrink too much
-      noBtnSize -= 0.05;  // Changed from 0.15
-      if (noBtnSize < 0.6) noBtnSize = 0.6;  // Changed from 0.3
-      print('DEBUG: Button size = $noBtnSize');
+      noBtnSize -= 0.05;
+      if (noBtnSize < 0.6) noBtnSize = 0.6;
 
       // Move button - SMALLER range so it stays visible
       final random = Random();
       noBtnPosition = Offset(
-        (random.nextDouble() - 0.5) * 100,  // Changed from 200
-        (random.nextDouble() - 0.5) * 50,   // Changed from 100
+        (random.nextDouble() - 0.5) * 100,
+        (random.nextDouble() - 0.5) * 50,
       );
-      print('DEBUG: Button position = $noBtnPosition');
 
       // Make Yes button bigger
       yesBtnSize = 1 + (clickCount * 0.15);
-      print('DEBUG: Yes button size = $yesBtnSize');
 
       // Change text
       if (clickCount == 3) {
-        noBtnText = 'Please?';
-        print('DEBUG: Text changed to Please?');
+        noBtnText = 'Please? 🥺';
       }
       if (clickCount == 5) {
-        noBtnText = 'Really?';
-        print('DEBUG: Text changed to Really?');
+        noBtnText = 'Really? 💔';
       }
       if (clickCount == 7) {
-        noBtnText = 'Fine...';
+        noBtnText = 'Fine... 😢';
         noBtnOpacity = 0.3;
-        print('DEBUG: Text changed to Fine...');
       }
-      
-      print('DEBUG: Current text = $noBtnText');
-      print('---');
     });
   }
 
@@ -156,7 +155,11 @@ class _ValentinePageState extends State<ValentinePage>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+            colors: [
+              Color(0xFFFF6B9D), // Hot pink
+              Color(0xFFFFC2D4), // Light pink
+              Color(0xFFFFE5EC), // Very light pink
+            ],
           ),
         ),
         child: Stack(
@@ -167,6 +170,9 @@ class _ValentinePageState extends State<ValentinePage>
                   imageUrl: 'test.png',
                 )),
 
+            // Sparkles overlay
+            ...List.generate(15, (index) => _buildSparkle(index)),
+
             // Main content
             Center(
               child: Container(
@@ -175,9 +181,13 @@ class _ValentinePageState extends State<ValentinePage>
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.95),
                   borderRadius: BorderRadius.circular(30),
+                  border: Border.all(
+                    color: const Color(0xFFFF69B4),
+                    width: 3,
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
+                      color: const Color(0xFFFF1493).withOpacity(0.3),
                       blurRadius: 60,
                       offset: const Offset(0, 20),
                     ),
@@ -192,28 +202,70 @@ class _ValentinePageState extends State<ValentinePage>
     );
   }
 
+  Widget _buildSparkle(int index) {
+    final random = Random(index);
+    return AnimatedBuilder(
+      animation: _sparkleController,
+      builder: (context, child) {
+        final offset = (_sparkleController.value + (index * 0.1)) % 1.0;
+        return Positioned(
+          left: MediaQuery.of(context).size.width * random.nextDouble(),
+          top: MediaQuery.of(context).size.height * random.nextDouble(),
+          child: Opacity(
+            opacity: (sin(offset * 2 * pi) + 1) / 2,
+            child: Icon(
+              Icons.star,
+              color: const Color(0xFFFFD700),
+              size: 15 + random.nextDouble() * 15,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildQuestionScreen() {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Heart decoration
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('💕', style: TextStyle(fontSize: 30)),
+            SizedBox(width: 10),
+            Text('💖', style: TextStyle(fontSize: 35)),
+            SizedBox(width: 10),
+            Text('💕', style: TextStyle(fontSize: 30)),
+          ],
+        ),
+        const SizedBox(height: 20),
+
         // Pulsing title
         ScaleTransition(
           scale: Tween<double>(begin: 1.0, end: 1.05).animate(
             CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
           ),
           child: const Text(
-            'Will You Be My\nValentine?',
+            '💝 Will You Be My\nValentine? 💝',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Color(0xFFe91e63),
+              color: Color(0xFFFF1493),
               fontSize: 40,
               fontWeight: FontWeight.bold,
+              shadows: [
+                Shadow(
+                  color: Color(0xFFFFB6C1),
+                  blurRadius: 10,
+                  offset: Offset(2, 2),
+                ),
+              ],
             ),
           ),
         ),
         const SizedBox(height: 30),
 
-        // Floating image/emoji
+        // Floating image with pink glow
         SlideTransition(
           position: Tween<Offset>(
             begin: Offset.zero,
@@ -221,41 +273,86 @@ class _ValentinePageState extends State<ValentinePage>
           ).animate(
             CurvedAnimation(parent: _floatController, curve: Curves.easeInOut),
           ),
-          child: Image.network(
-            'https://i.imgur.com/h9Yz0Sg.png',
-            width: 200,
-            height: 200,
-            errorBuilder: (context, error, stackTrace) {
-              return const Text(
-                'Loading...',
-                style: TextStyle(fontSize: 80),
-              );
-            },
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFFF69B4).withOpacity(0.6),
+                  blurRadius: 40,
+                  spreadRadius: 15,
+                ),
+              ],
+            ),
+            child: Image.network(
+              'https://i.imgur.com/h9Yz0Sg.png',
+              width: 200,
+              height: 200,
+              errorBuilder: (context, error, stackTrace) {
+                return const Text(
+                  '❤️',
+                  style: TextStyle(fontSize: 150),
+                );
+              },
+            ),
           ),
         ),
         const SizedBox(height: 40),
+
+        // Romantic text
+        const Text(
+          '💌 Pag balik nakoo mag date ta hehe 💌',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Color(0xFFFF69B4),
+            fontSize: 16,
+            fontStyle: FontStyle.italic,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 30),
 
         // Buttons
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Yes Button
+            // Yes Button with sparkle effect
             Transform.scale(
               scale: yesBtnSize,
-              child: ElevatedButton(
-                onPressed: handleYesClick,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFf5576c),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(50),
-                  ),
-                  elevation: 5,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(50),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFF1493).withOpacity(0.6),
+                      blurRadius: 20,
+                      spreadRadius: 5,
+                    ),
+                  ],
                 ),
-                child: const Text(
-                  'Yes!',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                child: ElevatedButton(
+                  onPressed: handleYesClick,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF1493),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(50),
+                    ),
+                    elevation: 8,
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Yes! 💕',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -271,8 +368,8 @@ class _ValentinePageState extends State<ValentinePage>
                   child: ElevatedButton(
                     onPressed: handleNoClick,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFbdbdbd),
-                      foregroundColor: const Color(0xFF666666),
+                      backgroundColor: const Color(0xFFD3D3D3),
+                      foregroundColor: const Color(0xFF808080),
                       padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(50),
@@ -281,7 +378,10 @@ class _ValentinePageState extends State<ValentinePage>
                     ),
                     child: Text(
                       noBtnText,
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -297,17 +397,42 @@ class _ValentinePageState extends State<ValentinePage>
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Celebrating hearts
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('💕', style: TextStyle(fontSize: 40)),
+            SizedBox(width: 10),
+            Text('💖', style: TextStyle(fontSize: 50)),
+            SizedBox(width: 10),
+            Text('💕', style: TextStyle(fontSize: 40)),
+          ],
+        ),
+        const SizedBox(height: 20),
+
         // Celebrating emoji
         RotationTransition(
           turns: Tween<double>(begin: -0.03, end: 0.03).animate(
             CurvedAnimation(parent: _celebrateController, curve: Curves.easeInOut),
           ),
-          child: const Text(
-            'YAY!',
-            style: TextStyle(fontSize: 100),
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFFF69B4).withOpacity(0.6),
+                  blurRadius: 40,
+                  spreadRadius: 15,
+                ),
+              ],
+            ),
+            child: const Text(
+              '🎉',
+              style: TextStyle(fontSize: 120),
+            ),
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 30),
 
         // Success title
         ScaleTransition(
@@ -315,27 +440,69 @@ class _ValentinePageState extends State<ValentinePage>
             CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
           ),
           child: const Text(
-            'Yay! You said YES!',
+            '💗 Yay! You said YES! 💗',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Color(0xFFe91e63),
+              color: Color(0xFFFF1493),
               fontSize: 40,
               fontWeight: FontWeight.bold,
+              shadows: [
+                Shadow(
+                  color: Color(0xFFFFB6C1),
+                  blurRadius: 10,
+                  offset: Offset(2, 2),
+                ),
+              ],
             ),
           ),
         ),
         const SizedBox(height: 20),
 
+        // Success GIF
         Image.network(
           'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExajFiOTRma2F0bjA1MHA0MWxrdGd0MmY3cmxzeXN1aW5qazNocGJvcSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/cbD4NSXZutjebF8cd8/giphy.gif',
           width: 200,
           height: 200,
           errorBuilder: (context, error, stackTrace) {
-            return const Text(
-              'Loading...',
-              style: TextStyle(fontSize: 80),
+            return Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFE5EC),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: const Color(0xFFFF69B4),
+                  width: 2,
+                ),
+              ),
+              padding: const EdgeInsets.all(20),
+              child: const Text(
+                '💕 This is the best day ever!\nI promise to cherish every moment with you! 💕',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Color(0xFFFF1493),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  height: 1.5,
+                ),
+              ),
             );
           },
+        ),
+        const SizedBox(height: 20),
+
+        // Dancing hearts
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('❤️', style: TextStyle(fontSize: 35)),
+            SizedBox(width: 15),
+            Text('💖', style: TextStyle(fontSize: 40)),
+            SizedBox(width: 15),
+            Text('💝', style: TextStyle(fontSize: 40)),
+            SizedBox(width: 15),
+            Text('💗', style: TextStyle(fontSize: 40)),
+            SizedBox(width: 15),
+            Text('❤️', style: TextStyle(fontSize: 35)),
+          ],
         ),
       ],
     );
